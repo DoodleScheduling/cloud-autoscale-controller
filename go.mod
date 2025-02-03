@@ -3,8 +3,8 @@ module github.com/doodlescheduling/cloud-autoscale-controller
 go 1.22.0
 
 require (
-	github.com/aws/aws-sdk-go-v2 v1.35.0
-	github.com/aws/aws-sdk-go-v2/service/rds v1.93.9
+	github.com/aws/aws-sdk-go-v2 v1.36.0
+	github.com/aws/aws-sdk-go-v2/service/rds v1.93.10
 	github.com/fluxcd/pkg/runtime v0.49.1
 	github.com/go-logr/logr v1.4.2
 	github.com/mongodb-forks/digest v1.1.0
@@ -21,10 +21,10 @@ require (
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect
 	github.com/MakeNowJust/heredoc v1.0.0 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.30 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.30 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.31 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.31 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.12.2 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.12.11 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.12.12 // indirect
 	github.com/aws/smithy-go v1.22.2 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
@@ -60,7 +60,6 @@ require (
 	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79 // indirect
 	github.com/imdario/mergo v0.3.16 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
-	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.17.9 // indirect
