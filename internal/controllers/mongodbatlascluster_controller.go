@@ -126,7 +126,7 @@ func (r *MongoDBAtlasClusterReconciler) Reconcile(ctx context.Context, req ctrl.
 	logger := r.Log.WithValues("namespace", req.Namespace, "name", req.Name)
 
 	cluster := infrav1beta1.MongoDBAtlasCluster{}
-	err := r.Client.Get(ctx, req.NamespacedName, &cluster)
+	err := r.Get(ctx, req.NamespacedName, &cluster)
 	if err != nil {
 		if kerrors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
@@ -260,7 +260,7 @@ func (r *MongoDBAtlasClusterReconciler) hasRunningPods(ctx context.Context, clus
 		}
 
 		var list corev1.PodList
-		if err := r.Client.List(ctx, &list, client.InNamespace(cluster.Namespace), &client.MatchingLabelsSelector{Selector: selector}); err != nil {
+		if err := r.List(ctx, &list, client.InNamespace(cluster.Namespace), &client.MatchingLabelsSelector{Selector: selector}); err != nil {
 			return false, err
 		}
 
@@ -360,11 +360,11 @@ func (r *MongoDBAtlasClusterReconciler) suspend(ctx context.Context, logger logr
 func (r *MongoDBAtlasClusterReconciler) patchStatus(ctx context.Context, cluster *infrav1beta1.MongoDBAtlasCluster) error {
 	key := client.ObjectKeyFromObject(cluster)
 	latest := &infrav1beta1.MongoDBAtlasCluster{}
-	if err := r.Client.Get(ctx, key, latest); err != nil {
+	if err := r.Get(ctx, key, latest); err != nil {
 		return err
 	}
 
-	return r.Client.Status().Patch(ctx, cluster, client.MergeFrom(latest))
+	return r.Status().Patch(ctx, cluster, client.MergeFrom(latest))
 }
 
 // objectKey returns client.ObjectKey for the object.

@@ -45,17 +45,17 @@ type MongoDBAtlasClusterStatus struct {
 }
 
 func MongoDBAtlasClusterReconciling(set MongoDBAtlasCluster, status metav1.ConditionStatus, reason, message string) MongoDBAtlasCluster {
-	setResourceCondition(&set, ConditionReconciling, status, reason, message, set.ObjectMeta.Generation)
+	setResourceCondition(&set, ConditionReconciling, status, reason, message, set.Generation)
 	return set
 }
 
 func MongoDBAtlasClusterReady(set MongoDBAtlasCluster, status metav1.ConditionStatus, reason, message string) MongoDBAtlasCluster {
-	setResourceCondition(&set, ConditionReady, status, reason, message, set.ObjectMeta.Generation)
+	setResourceCondition(&set, ConditionReady, status, reason, message, set.Generation)
 	return set
 }
 
 func MongoDBAtlasClusterScaledToZero(set MongoDBAtlasCluster, status metav1.ConditionStatus, reason, message string) MongoDBAtlasCluster {
-	setResourceCondition(&set, ConditionScaledToZero, status, reason, message, set.ObjectMeta.Generation)
+	setResourceCondition(&set, ConditionScaledToZero, status, reason, message, set.Generation)
 	return set
 }
 

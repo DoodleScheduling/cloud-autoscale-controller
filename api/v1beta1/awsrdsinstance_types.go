@@ -45,17 +45,17 @@ type AWSRDSInstanceStatus struct {
 }
 
 func AWSRDSInstanceReconciling(set AWSRDSInstance, status metav1.ConditionStatus, reason, message string) AWSRDSInstance {
-	setResourceCondition(&set, ConditionReconciling, status, reason, message, set.ObjectMeta.Generation)
+	setResourceCondition(&set, ConditionReconciling, status, reason, message, set.Generation)
 	return set
 }
 
 func AWSRDSInstanceReady(set AWSRDSInstance, status metav1.ConditionStatus, reason, message string) AWSRDSInstance {
-	setResourceCondition(&set, ConditionReady, status, reason, message, set.ObjectMeta.Generation)
+	setResourceCondition(&set, ConditionReady, status, reason, message, set.Generation)
 	return set
 }
 
 func AWSRDSInstanceScaledToZero(set AWSRDSInstance, status metav1.ConditionStatus, reason, message string) AWSRDSInstance {
-	setResourceCondition(&set, ConditionScaledToZero, status, reason, message, set.ObjectMeta.Generation)
+	setResourceCondition(&set, ConditionScaledToZero, status, reason, message, set.Generation)
 	return set
 }
 

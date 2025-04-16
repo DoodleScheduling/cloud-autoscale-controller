@@ -134,7 +134,7 @@ func (r *AWSRDSInstanceReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	logger := r.Log.WithValues("namespace", req.Namespace, "name", req.Name)
 
 	instance := infrav1beta1.AWSRDSInstance{}
-	err := r.Client.Get(ctx, req.NamespacedName, &instance)
+	err := r.Get(ctx, req.NamespacedName, &instance)
 	if err != nil {
 		if kerrors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
@@ -267,7 +267,7 @@ func (r *AWSRDSInstanceReconciler) hasRunningPods(ctx context.Context, instance 
 		}
 
 		var list corev1.PodList
-		if err := r.Client.List(ctx, &list, client.InNamespace(instance.Namespace), &client.MatchingLabelsSelector{Selector: selector}); err != nil {
+		if err := r.List(ctx, &list, client.InNamespace(instance.Namespace), &client.MatchingLabelsSelector{Selector: selector}); err != nil {
 			return false, err
 		}
 
@@ -364,9 +364,9 @@ func (r *AWSRDSInstanceReconciler) suspend(ctx context.Context, logger logr.Logg
 func (r *AWSRDSInstanceReconciler) patchStatus(ctx context.Context, instance *infrav1beta1.AWSRDSInstance) error {
 	key := client.ObjectKeyFromObject(instance)
 	latest := &infrav1beta1.AWSRDSInstance{}
-	if err := r.Client.Get(ctx, key, latest); err != nil {
+	if err := r.Get(ctx, key, latest); err != nil {
 		return err
 	}
 
-	return r.Client.Status().Patch(ctx, instance, client.MergeFrom(latest))
+	return r.Status().Patch(ctx, instance, client.MergeFrom(latest))
 }
