@@ -23,7 +23,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/doodlescheduling/cloud-autoscale-controller/api/v1beta1"
 	infrav1beta1 "github.com/doodlescheduling/cloud-autoscale-controller/api/v1beta1"
 	auraclient "github.com/doodlescheduling/neo4j-aura-controller/pkg/aura/client"
 	"github.com/fluxcd/pkg/runtime/conditions"
@@ -65,9 +64,9 @@ type Neo4jAuraInstanceReconcilerOptions struct {
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *Neo4jAuraInstanceReconciler) SetupWithManager(mgr ctrl.Manager, opts Neo4jAuraInstanceReconcilerOptions) error {
-	if err := mgr.GetFieldIndexer().IndexField(context.TODO(), &v1beta1.Neo4jAuraInstance{}, secretIndexKey,
+	if err := mgr.GetFieldIndexer().IndexField(context.TODO(), &infrav1beta1.Neo4jAuraInstance{}, secretIndexKey,
 		func(o client.Object) []string {
-			instance := o.(*v1beta1.Neo4jAuraInstance)
+			instance := o.(*infrav1beta1.Neo4jAuraInstance)
 			keys := []string{}
 
 			if instance.Spec.Secret.Name != "" {
