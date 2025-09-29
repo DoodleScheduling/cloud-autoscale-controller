@@ -24,7 +24,7 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
         with:
-          go-version: '1.24.x'
+          go-version: '1.25.x'
       - name: Docker Login
         uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # v3.5.0
         with:
