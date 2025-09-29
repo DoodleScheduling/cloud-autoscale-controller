@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/doodlescheduling/cloud-autoscale-controller/api/v1beta1"
 	infrav1beta1 "github.com/doodlescheduling/cloud-autoscale-controller/api/v1beta1"
 	"github.com/fluxcd/pkg/runtime/conditions"
 	"github.com/go-logr/logr"
@@ -61,6 +62,23 @@ type MongoDBAtlasClusterReconcilerOptions struct {
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *MongoDBAtlasClusterReconciler) SetupWithManager(mgr ctrl.Manager, opts MongoDBAtlasClusterReconcilerOptions) error {
+	if err := mgr.GetFieldIndexer().IndexField(context.TODO(), &v1beta1.MongoDBAtlasCluster{}, secretIndexKey,
+		func(o client.Object) []string {
+			instance := o.(*v1beta1.MongoDBAtlasCluster)
+			keys := []string{}
+
+			if instance.Spec.Secret.Name != "" {
+				keys = []string{
+					fmt.Sprintf("%s/%s", instance.GetNamespace(), instance.Spec.Secret.Name),
+				}
+			}
+
+			return keys
+		},
+	); err != nil {
+		return err
+	}
+
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&infrav1beta1.MongoDBAtlasCluster{}).
 		Watches(
@@ -76,14 +94,14 @@ func (r *MongoDBAtlasClusterReconciler) SetupWithManager(mgr ctrl.Manager, opts 
 }
 
 func (r *MongoDBAtlasClusterReconciler) requestsForSecretChange(ctx context.Context, o client.Object) []reconcile.Request {
-	sectet, ok := o.(*corev1.Secret)
+	secret, ok := o.(*corev1.Secret)
 	if !ok {
 		panic(fmt.Sprintf("expected a Secret, got %T", o))
 	}
 
 	var list infrav1beta1.MongoDBAtlasClusterList
 	if err := r.List(ctx, &list, client.MatchingFields{
-		secretIndexKey: objectKey(sectet).String(),
+		secretIndexKey: objectKey(secret).String(),
 	}); err != nil {
 		return nil
 	}
@@ -146,7 +164,7 @@ func (r *MongoDBAtlasClusterReconciler) Reconcile(ctx context.Context, req ctrl.
 	cluster.Status.ObservedGeneration = cluster.GetGeneration()
 
 	if err != nil {
-		logger.Error(err, "reconcile error occured")
+		logger.Error(err, "reconcile error occurred")
 		cluster = infrav1beta1.MongoDBAtlasClusterReady(cluster, metav1.ConditionFalse, "ReconciliationFailed", err.Error())
 		r.Recorder.Event(&cluster, "Normal", "error", err.Error())
 		result.Requeue = true
@@ -230,14 +248,14 @@ func (r *MongoDBAtlasClusterReconciler) reconcile(ctx context.Context, cluster i
 			}
 		}
 
-		logger.Info("make sure RDS clusters are suspended", "cluster", opts.ClusterName)
+		logger.Info("make sure atlas cluster is suspended", "cluster", opts.ClusterName)
 		res, err = r.suspend(ctx, logger, opts)
 
 		if err == nil {
 			cluster = infrav1beta1.MongoDBAtlasClusterReady(cluster, metav1.ConditionTrue, "ReconciliationSuccessful", "atlas cluster suspended")
 		}
 	} else {
-		logger.Info("make sure RDS clusters are resumed", "cluster", opts.ClusterName)
+		logger.Info("make sure atlas cluster is resumed", "cluster", opts.ClusterName)
 		res, err = r.resume(ctx, logger, opts)
 
 		if err == nil {

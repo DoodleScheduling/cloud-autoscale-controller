@@ -2,9 +2,12 @@ module github.com/doodlescheduling/cloud-autoscale-controller
 
 go 1.24.2
 
+toolchain go1.24.7
+
 require (
 	github.com/aws/aws-sdk-go-v2 v1.38.3
 	github.com/aws/aws-sdk-go-v2/service/rds v1.105.0
+	github.com/doodlescheduling/neo4j-aura-controller v0.0.1
 	github.com/fluxcd/pkg/runtime v0.59.0
 	github.com/go-logr/logr v1.4.3
 	github.com/mongodb-forks/digest v1.1.0
@@ -12,6 +15,7 @@ require (
 	github.com/onsi/gomega v1.38.2
 	github.com/spf13/pflag v1.0.10
 	go.mongodb.org/atlas v0.38.0
+	golang.org/x/oauth2 v0.29.0
 	k8s.io/api v0.34.0
 	k8s.io/apimachinery v0.34.0
 	k8s.io/client-go v0.34.0
@@ -22,6 +26,7 @@ require (
 	github.com/Azure/go-ansiterm v0.0.0-20250102033503-faa5f7b0171c // indirect
 	github.com/MakeNowJust/heredoc v1.0.0 // indirect
 	github.com/Masterminds/semver/v3 v3.4.0 // indirect
+	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.6 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.6 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.1 // indirect
@@ -33,7 +38,6 @@ require (
 	github.com/chai2010/gettext-go v1.0.3 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/emicklei/go-restful/v3 v3.12.2 // indirect
-	github.com/evanphx/json-patch v5.9.0+incompatible // indirect
 	github.com/evanphx/json-patch/v5 v5.9.11 // indirect
 	github.com/exponent-io/jsonpath v0.0.0-20210407135951-1de76d718b3f // indirect
 	github.com/fluxcd/cli-utils v0.36.0-flux.13 // indirect
@@ -69,6 +73,7 @@ require (
 	github.com/monochromegane/go-gitignore v0.0.0-20200626010858-205db1a8cc00 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f // indirect
+	github.com/oapi-codegen/runtime v1.1.2 // indirect
 	github.com/peterbourgon/diskv v2.0.1+incompatible // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
@@ -86,7 +91,6 @@ require (
 	go.yaml.in/yaml/v2 v2.4.2 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/net v0.43.0 // indirect
-	golang.org/x/oauth2 v0.29.0 // indirect
 	golang.org/x/sync v0.16.0 // indirect
 	golang.org/x/sys v0.35.0 // indirect
 	golang.org/x/term v0.34.0 // indirect

@@ -23,12 +23,13 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/rds"
 	"github.com/doodlescheduling/cloud-autoscale-controller/api/v1beta1"
 	infrav1beta1 "github.com/doodlescheduling/cloud-autoscale-controller/api/v1beta1"
+	auraclient "github.com/doodlescheduling/neo4j-aura-controller/pkg/aura/client"
 	"github.com/fluxcd/pkg/runtime/conditions"
 	"github.com/go-logr/logr"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/clientcredentials"
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -44,33 +45,29 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-const (
-	secretIndexKey = ".metadata.secret"
-)
-
-//+kubebuilder:rbac:groups=cloudautoscale.infra.doodle.com,resources=awsrdsinstances,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=cloudautoscale.infra.doodle.com,resources=awsrdsinstances/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=cloudautoscale.infra.doodle.com,resources=awsrdsinstances/finalizers,verbs=update
+//+kubebuilder:rbac:groups=cloudautoscale.infra.doodle.com,resources=neo4jaurainstances,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=cloudautoscale.infra.doodle.com,resources=neo4jaurainstances/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=cloudautoscale.infra.doodle.com,resources=neo4jaurainstances/finalizers,verbs=update
 //+kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;watch
 //+kubebuilder:rbac:groups=core,resources=secrets,verbs=get;list;watch
 
-// AWSRDSInstanceReconciler reconciles a Namespace object
-type AWSRDSInstanceReconciler struct {
+// Neo4jAuraInstanceReconciler reconciles a Namespace object
+type Neo4jAuraInstanceReconciler struct {
 	client.Client
 	HTTPClient *http.Client
 	Log        logr.Logger
 	Recorder   record.EventRecorder
 }
 
-type AWSRDSInstanceReconcilerOptions struct {
+type Neo4jAuraInstanceReconcilerOptions struct {
 	MaxConcurrentReconciles int
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *AWSRDSInstanceReconciler) SetupWithManager(mgr ctrl.Manager, opts AWSRDSInstanceReconcilerOptions) error {
-	if err := mgr.GetFieldIndexer().IndexField(context.TODO(), &v1beta1.AWSRDSInstance{}, secretIndexKey,
+func (r *Neo4jAuraInstanceReconciler) SetupWithManager(mgr ctrl.Manager, opts Neo4jAuraInstanceReconcilerOptions) error {
+	if err := mgr.GetFieldIndexer().IndexField(context.TODO(), &v1beta1.Neo4jAuraInstance{}, secretIndexKey,
 		func(o client.Object) []string {
-			instance := o.(*v1beta1.AWSRDSInstance)
+			instance := o.(*v1beta1.Neo4jAuraInstance)
 			keys := []string{}
 
 			if instance.Spec.Secret.Name != "" {
@@ -86,7 +83,7 @@ func (r *AWSRDSInstanceReconciler) SetupWithManager(mgr ctrl.Manager, opts AWSRD
 	}
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&infrav1beta1.AWSRDSInstance{}, builder.WithPredicates(
+		For(&infrav1beta1.Neo4jAuraInstance{}, builder.WithPredicates(
 			predicate.GenerationChangedPredicate{},
 		)).
 		Watches(
@@ -101,13 +98,13 @@ func (r *AWSRDSInstanceReconciler) SetupWithManager(mgr ctrl.Manager, opts AWSRD
 		Complete(r)
 }
 
-func (r *AWSRDSInstanceReconciler) requestsForSecretChange(ctx context.Context, o client.Object) []reconcile.Request {
+func (r *Neo4jAuraInstanceReconciler) requestsForSecretChange(ctx context.Context, o client.Object) []reconcile.Request {
 	secret, ok := o.(*corev1.Secret)
 	if !ok {
 		panic(fmt.Sprintf("expected a Secret, got %T", o))
 	}
 
-	var list infrav1beta1.AWSRDSInstanceList
+	var list infrav1beta1.Neo4jAuraInstanceList
 	if err := r.List(ctx, &list, client.MatchingFields{
 		secretIndexKey: objectKey(secret).String(),
 	}); err != nil {
@@ -116,15 +113,15 @@ func (r *AWSRDSInstanceReconciler) requestsForSecretChange(ctx context.Context, 
 
 	var reqs []reconcile.Request
 	for _, instance := range list.Items {
-		r.Log.V(1).Info("referenced secret from a AWSRDSInstance changed detected", "namespace", instance.GetNamespace(), "name", instance.GetName())
+		r.Log.V(1).Info("referenced secret from a Neo4jAuraInstance changed detected", "namespace", instance.GetNamespace(), "name", instance.GetName())
 		reqs = append(reqs, reconcile.Request{NamespacedName: objectKey(&instance)})
 	}
 
 	return reqs
 }
 
-func (r *AWSRDSInstanceReconciler) requestsForChangeBySelector(ctx context.Context, o client.Object) []reconcile.Request {
-	var list infrav1beta1.AWSRDSInstanceList
+func (r *Neo4jAuraInstanceReconciler) requestsForChangeBySelector(ctx context.Context, o client.Object) []reconcile.Request {
+	var list infrav1beta1.Neo4jAuraInstanceList
 	if err := r.List(ctx, &list, client.InNamespace(o.GetNamespace())); err != nil {
 		return nil
 	}
@@ -148,10 +145,10 @@ func (r *AWSRDSInstanceReconciler) requestsForChangeBySelector(ctx context.Conte
 	return reqs
 }
 
-func (r *AWSRDSInstanceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *Neo4jAuraInstanceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := r.Log.WithValues("namespace", req.Namespace, "name", req.Name)
 
-	instance := infrav1beta1.AWSRDSInstance{}
+	instance := infrav1beta1.Neo4jAuraInstance{}
 	err := r.Get(ctx, req.NamespacedName, &instance)
 	if err != nil {
 		if kerrors.IsNotFound(err) {
@@ -173,7 +170,7 @@ func (r *AWSRDSInstanceReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 	if err != nil {
 		logger.Error(err, "reconcile error occurred")
-		instance = infrav1beta1.AWSRDSInstanceReady(instance, metav1.ConditionFalse, "ReconciliationFailed", err.Error())
+		instance = infrav1beta1.Neo4jAuraInstanceReady(instance, metav1.ConditionFalse, "ReconciliationFailed", err.Error())
 		r.Recorder.Event(&instance, "Normal", "error", err.Error())
 	}
 
@@ -191,7 +188,7 @@ func (r *AWSRDSInstanceReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 }
 
-func (r *AWSRDSInstanceReconciler) reconcile(ctx context.Context, instance infrav1beta1.AWSRDSInstance, logger logr.Logger) (infrav1beta1.AWSRDSInstance, ctrl.Result, error) {
+func (r *Neo4jAuraInstanceReconciler) reconcile(ctx context.Context, instance infrav1beta1.Neo4jAuraInstance, logger logr.Logger) (infrav1beta1.Neo4jAuraInstance, ctrl.Result, error) {
 	var secret corev1.Secret
 	if err := r.Get(ctx, types.NamespacedName{
 		Name:      instance.Spec.Secret.Name,
@@ -200,20 +197,20 @@ func (r *AWSRDSInstanceReconciler) reconcile(ctx context.Context, instance infra
 		return instance, reconcile.Result{}, err
 	}
 
-	opts := rdsOptions{
-		AWSRDSInstanceSpec: instance.Spec,
+	opts := auraOptions{
+		Neo4jAuraInstanceSpec: instance.Spec,
 	}
 
-	if val, ok := secret.Data["AWS_ACCESS_KEY_ID"]; !ok {
-		return instance, ctrl.Result{}, errors.New("AWS_ACCESS_KEY_ID not found in secret")
+	if val, ok := secret.Data["clientID"]; !ok {
+		return instance, ctrl.Result{}, errors.New("clientID not found in secret")
 	} else {
-		opts.AccessKeyID = string(val)
+		opts.ClientID = string(val)
 	}
 
-	if val, ok := secret.Data["AWS_SECRET_ACCESS_KEY"]; !ok {
-		return instance, ctrl.Result{}, errors.New("AWS_SECRET_ACCESS_KEY not found in secret")
+	if val, ok := secret.Data["clientSecret"]; !ok {
+		return instance, ctrl.Result{}, errors.New("clientSecret not found in secret")
 	} else {
-		opts.SecretAccessKey = string(val)
+		opts.ClientSecret = string(val)
 	}
 
 	if instance.Spec.InstanceName == "" {
@@ -230,9 +227,9 @@ func (r *AWSRDSInstanceReconciler) reconcile(ctx context.Context, instance infra
 	}
 
 	if podsRunning {
-		instance = infrav1beta1.AWSRDSInstanceScaledToZero(instance, metav1.ConditionFalse, "PodsRunning", "selector matches at least one running pod")
+		instance = infrav1beta1.Neo4jAuraInstanceScaledToZero(instance, metav1.ConditionFalse, "PodsRunning", "selector matches at least one running pod")
 	} else {
-		instance = infrav1beta1.AWSRDSInstanceScaledToZero(instance, metav1.ConditionTrue, "PodsNotRunning", "no running pods detected")
+		instance = infrav1beta1.Neo4jAuraInstanceScaledToZero(instance, metav1.ConditionTrue, "PodsNotRunning", "no running pods detected")
 	}
 
 	suspend := !podsRunning
@@ -255,25 +252,25 @@ func (r *AWSRDSInstanceReconciler) reconcile(ctx context.Context, instance infra
 			}
 		}
 
-		logger.Info("make sure rds instance is suspended", "instance", opts.instanceName)
+		logger.Info("make sure aura instance is suspended", "instance", opts.instanceName)
 		res, err = r.suspend(ctx, logger, opts)
 
 		if err == nil {
-			instance = infrav1beta1.AWSRDSInstanceReady(instance, metav1.ConditionTrue, "ReconciliationSuccessful", "rds instance suspended")
+			instance = infrav1beta1.Neo4jAuraInstanceReady(instance, metav1.ConditionTrue, "ReconciliationSuccessful", "aura instance suspended")
 		}
 	} else {
-		logger.Info("make sure rds instance is resumed", "instance", opts.instanceName)
+		logger.Info("make sure aura instance is resumed", "instance", opts.instanceName)
 		res, err = r.resume(ctx, logger, opts)
 
 		if err == nil {
-			instance = infrav1beta1.AWSRDSInstanceReady(instance, metav1.ConditionTrue, "ReconciliationSuccessful", "rds instance suspended")
+			instance = infrav1beta1.Neo4jAuraInstanceReady(instance, metav1.ConditionTrue, "ReconciliationSuccessful", "aura instance suspended")
 		}
 	}
 
 	return instance, res, err
 }
 
-func (r *AWSRDSInstanceReconciler) hasRunningPods(ctx context.Context, instance infrav1beta1.AWSRDSInstance, logger logr.Logger) (bool, error) {
+func (r *Neo4jAuraInstanceReconciler) hasRunningPods(ctx context.Context, instance infrav1beta1.Neo4jAuraInstance, logger logr.Logger) (bool, error) {
 	if len(instance.Spec.ScaleToZero) == 0 {
 		return true, nil
 	}
@@ -300,25 +297,42 @@ func (r *AWSRDSInstanceReconciler) hasRunningPods(ctx context.Context, instance 
 	return false, nil
 }
 
-type rdsOptions struct {
-	infrav1beta1.AWSRDSInstanceSpec
-	instanceName    string
-	AccessKeyID     string
-	SecretAccessKey string
+type auraOptions struct {
+	infrav1beta1.Neo4jAuraInstanceSpec
+	instanceName string
+	ClientID     string
+	ClientSecret string
 }
 
-func (r *AWSRDSInstanceReconciler) resume(ctx context.Context, logger logr.Logger, opts rdsOptions) (ctrl.Result, error) {
-	client, output, err := r.initClient(ctx, opts)
+func (r *Neo4jAuraInstanceReconciler) httpClient(ctx context.Context, opts auraOptions) (*http.Client, error) {
+	conf := &clientcredentials.Config{
+		ClientID:     opts.ClientID,
+		ClientSecret: opts.ClientSecret,
+		TokenURL:     "https://api.neo4j.io/oauth/token",
+	}
+
+	ctx = context.WithValue(ctx, oauth2.HTTPClient, r.HTTPClient)
+	tokenSource := conf.TokenSource(ctx)
+	transport := &oauth2.Transport{
+		Source: tokenSource,
+		Base:   r.HTTPClient.Transport,
+	}
+
+	return &http.Client{
+		Transport: transport,
+		Timeout:   r.HTTPClient.Timeout,
+	}, nil
+}
+
+func (r *Neo4jAuraInstanceReconciler) resume(ctx context.Context, logger logr.Logger, opts auraOptions) (ctrl.Result, error) {
+	client, instance, err := r.initClient(ctx, opts)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
 
-	if *output.DBInstances[0].DBInstanceStatus == "stopped" {
-		logger.Info("resume rds instance")
-		input := &rds.StartDBInstanceInput{
-			DBInstanceIdentifier: &opts.instanceName,
-		}
-		_, err := client.StartDBInstance(ctx, input)
+	if instance.Data.Status == auraclient.InstanceDataStatusPaused || instance.Data.Status == auraclient.InstanceDataStatusPausing {
+		logger.Info("resume aura instance")
+		_, err := client.PostResumeInstanceWithResponse(ctx, instance.Data.Id, auraclient.PostResumeInstanceJSONRequestBody{})
 		if err != nil {
 			return ctrl.Result{}, err
 		}
@@ -327,50 +341,57 @@ func (r *AWSRDSInstanceReconciler) resume(ctx context.Context, logger logr.Logge
 	return ctrl.Result{}, nil
 }
 
-func (r *AWSRDSInstanceReconciler) initClient(ctx context.Context, opts rdsOptions) (*rds.Client, *rds.DescribeDBInstancesOutput, error) {
-	var provider aws.CredentialsProviderFunc = func(ctx context.Context) (aws.Credentials, error) {
-		return aws.Credentials{
-			AccessKeyID:     opts.AccessKeyID,
-			SecretAccessKey: opts.SecretAccessKey,
-		}, nil
-	}
-
-	rdsOpts := rds.Options{
-		Region:      opts.Region,
-		Credentials: provider,
-		HTTPClient:  r.HTTPClient,
-	}
-
-	client := rds.New(rdsOpts)
-
-	input := &rds.DescribeDBInstancesInput{
-		DBInstanceIdentifier: &opts.instanceName,
-	}
-
-	output, err := client.DescribeDBInstances(ctx, input)
+func (r *Neo4jAuraInstanceReconciler) initClient(ctx context.Context, opts auraOptions) (*auraclient.ClientWithResponses, *auraclient.Instance, error) {
+	httpClient, err := r.httpClient(ctx, opts)
 	if err != nil {
-		return client, output, err
+		return nil, nil, err
 	}
 
-	if len(output.DBInstances) != 1 {
-		return client, output, errors.New("no such rds instance found")
+	auraClient, err := auraclient.NewClientWithResponses("https://api.neo4j.io/v1", auraclient.WithHTTPClient(httpClient))
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to create aura client: %w", err)
 	}
 
-	return client, output, nil
+	params := auraclient.GetInstancesParams{}
+
+	auraInstances, err := auraClient.GetInstancesWithResponse(ctx, &params)
+	if err != nil {
+		return auraClient, nil, err
+	}
+
+	if auraInstances.StatusCode() != http.StatusOK {
+		return auraClient, nil, fmt.Errorf("failed to get instance list, request failed with code %d - %s", auraInstances.StatusCode(), auraInstances.Body)
+	}
+
+	for _, remoteInstance := range auraInstances.JSON200.Data {
+		if opts.instanceName != remoteInstance.Name {
+			continue
+		}
+
+		auraInstance, err := auraClient.GetInstanceIdWithResponse(ctx, remoteInstance.Id)
+		if err != nil {
+			return auraClient, nil, fmt.Errorf("failed to get instance: %w", err)
+		}
+
+		if auraInstances.StatusCode() != http.StatusOK {
+			return auraClient, nil, fmt.Errorf("failed to get instance list, request failed with code %d - %s", auraInstances.StatusCode(), auraInstances.Body)
+		}
+
+		return auraClient, auraInstance.JSON200, nil
+	}
+
+	return nil, nil, errors.New("instance not found")
 }
 
-func (r *AWSRDSInstanceReconciler) suspend(ctx context.Context, logger logr.Logger, opts rdsOptions) (ctrl.Result, error) {
-	client, output, err := r.initClient(ctx, opts)
+func (r *Neo4jAuraInstanceReconciler) suspend(ctx context.Context, logger logr.Logger, opts auraOptions) (ctrl.Result, error) {
+	client, instance, err := r.initClient(ctx, opts)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
 
-	if *output.DBInstances[0].DBInstanceStatus == "available" {
-		logger.Info("suspend rds instance")
-		input := &rds.StopDBInstanceInput{
-			DBInstanceIdentifier: &opts.instanceName,
-		}
-		_, err := client.StopDBInstance(ctx, input)
+	if instance.Data.Status == "running" {
+		logger.Info("suspend aura instance")
+		_, err := client.PostPauseInstanceWithResponse(ctx, instance.Data.Id, auraclient.PostPauseInstanceJSONRequestBody{})
 		if err != nil {
 			return ctrl.Result{}, err
 		}
@@ -379,9 +400,9 @@ func (r *AWSRDSInstanceReconciler) suspend(ctx context.Context, logger logr.Logg
 	return ctrl.Result{}, nil
 }
 
-func (r *AWSRDSInstanceReconciler) patchStatus(ctx context.Context, instance *infrav1beta1.AWSRDSInstance) error {
+func (r *Neo4jAuraInstanceReconciler) patchStatus(ctx context.Context, instance *infrav1beta1.Neo4jAuraInstance) error {
 	key := client.ObjectKeyFromObject(instance)
-	latest := &infrav1beta1.AWSRDSInstance{}
+	latest := &infrav1beta1.Neo4jAuraInstance{}
 	if err := r.Get(ctx, key, latest); err != nil {
 		return err
 	}

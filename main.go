@@ -126,6 +126,7 @@ func main() {
 			ByObject: map[ctrlclient.Object]ctrlcache.ByObject{
 				&infrav1beta1.MongoDBAtlasCluster{}: {Label: watchSelector},
 				&infrav1beta1.AWSRDSInstance{}:      {Label: watchSelector},
+				&infrav1beta1.Neo4jAuraInstance{}:   {Label: watchSelector},
 			},
 			DefaultNamespaces: watchNs,
 		},
@@ -175,6 +176,20 @@ func main() {
 		MaxConcurrentReconciles: concurrent,
 	}); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "AWSRDSInstance")
+		os.Exit(1)
+	}
+
+	neo4jAuraInstanceReconciler := &controllers.Neo4jAuraInstanceReconciler{
+		Client:     mgr.GetClient(),
+		Log:        ctrl.Log.WithName("controllers").WithName("Neo4jAuraInstance"),
+		HTTPClient: http.DefaultClient,
+		Recorder:   mgr.GetEventRecorderFor("Neo4jAuraInstance"),
+	}
+
+	if err = neo4jAuraInstanceReconciler.SetupWithManager(mgr, controllers.Neo4jAuraInstanceReconcilerOptions{
+		MaxConcurrentReconciles: concurrent,
+	}); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Neo4jAuraInstance")
 		os.Exit(1)
 	}
 
