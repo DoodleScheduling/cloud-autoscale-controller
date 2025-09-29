@@ -23,7 +23,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/doodlescheduling/cloud-autoscale-controller/api/v1beta1"
 	infrav1beta1 "github.com/doodlescheduling/cloud-autoscale-controller/api/v1beta1"
 	"github.com/fluxcd/pkg/runtime/conditions"
 	"github.com/go-logr/logr"
@@ -62,9 +61,9 @@ type MongoDBAtlasClusterReconcilerOptions struct {
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *MongoDBAtlasClusterReconciler) SetupWithManager(mgr ctrl.Manager, opts MongoDBAtlasClusterReconcilerOptions) error {
-	if err := mgr.GetFieldIndexer().IndexField(context.TODO(), &v1beta1.MongoDBAtlasCluster{}, secretIndexKey,
+	if err := mgr.GetFieldIndexer().IndexField(context.TODO(), &infrav1beta1.MongoDBAtlasCluster{}, secretIndexKey,
 		func(o client.Object) []string {
-			instance := o.(*v1beta1.MongoDBAtlasCluster)
+			instance := o.(*infrav1beta1.MongoDBAtlasCluster)
 			keys := []string{}
 
 			if instance.Spec.Secret.Name != "" {
