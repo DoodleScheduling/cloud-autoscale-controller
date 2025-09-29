@@ -102,6 +102,14 @@ var _ = BeforeSuite(func() {
 	}).SetupWithManager(k8sManager, AWSRDSInstanceReconcilerOptions{})
 	Expect(err).ToNot(HaveOccurred())
 
+	err = (&Neo4jAuraInstanceReconciler{
+		HTTPClient: neo4jMockHTTPClient,
+		Log:        ctrl.Log.WithName("controllers").WithName("Neo4jAuraInstance"),
+		Client:     k8sManager.GetClient(),
+		Recorder:   k8sManager.GetEventRecorderFor("Neo4jAuraInstance"),
+	}).SetupWithManager(k8sManager, Neo4jAuraInstanceReconcilerOptions{})
+	Expect(err).ToNot(HaveOccurred())
+
 	go func() {
 		defer GinkgoRecover()
 		err = k8sManager.Start(ctx)
@@ -120,6 +128,13 @@ type mockTransport struct {
 }
 
 func (m *mockTransport) RoundTrip(r *http.Request) (*http.Response, error) {
+	if r.Host == "token-endpoint" {
+		return &http.Response{
+			StatusCode: 200,
+			Body:       io.NopCloser(strings.NewReader(`{"access_token": "token", "expires_in": 3600}`)),
+		}, nil
+	}
+
 	return &http.Response{
 		StatusCode: 200,
 		Body:       io.NopCloser(strings.NewReader(``)),

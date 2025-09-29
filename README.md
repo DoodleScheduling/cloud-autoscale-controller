@@ -89,6 +89,35 @@ metadata:
 type: Opaque
 ```
 
+### Neo4j Aura
+
+```
+apiVersion: cloudautoscale.infra.doodle.com/v1beta1
+kind: Neo4jAuraInstance
+metadata:
+  name: neo-myname
+spec:
+  instanceName: my-aura-instance # If instanceName is not set .metadata.name will be used
+  gracePeriod: 5m
+  interval: 15m
+  secret:
+    name: neo4j-project-admin
+  scaleToZero:
+  - matchLabels:
+      app: backend
+  - matchLabels:
+      app: another-neo4j-client
+---
+apiVersion: v1
+data:
+  clientID: c2VjcmV0=
+  clientSecret: c2VjcmV0=
+kind: Secret
+metadata:
+  name: neo4j-project-admin
+type: Opaque
+``
+
 ## Observe reconciliation
 
 Each resource reports various conditions in `.status.condtions` which will give the necessary insight about the 

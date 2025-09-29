@@ -16,11 +16,11 @@ import (
 
 var _ = Describe("MongoDBAtlasCluster controller", func() {
 	const (
-		timeout  = time.Second * 10
+		timeout  = time.Second * 4
 		interval = time.Millisecond * 600
 	)
 
-	When("reconciling a suspendended MongoDBAtlasCluster", func() {
+	When("reconciling a suspended MongoDBAtlasCluster", func() {
 		instanceName := fmt.Sprintf("cluster-%s", rand.String(5))
 
 		It("should not update the status", func() {

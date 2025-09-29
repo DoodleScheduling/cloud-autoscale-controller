@@ -3,6 +3,9 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"io"
+	"net/http"
+	"strings"
 	"time"
 
 	"github.com/doodlescheduling/cloud-autoscale-controller/api/v1beta1"
@@ -14,25 +17,46 @@ import (
 	"k8s.io/apimachinery/pkg/util/rand"
 )
 
-var _ = Describe("AWSRDSInstance controller", func() {
+type neo4jMockTransport struct {
+}
+
+func (m *neo4jMockTransport) RoundTrip(r *http.Request) (*http.Response, error) {
+	if r.URL.Path == "/oauth/token" {
+		return &http.Response{
+			StatusCode: 200,
+			Body:       io.NopCloser(strings.NewReader(`{"access_token": "token", "expires_in": 3600}`)),
+		}, nil
+	}
+
+	return &http.Response{
+		StatusCode: 500,
+		Body:       io.NopCloser(strings.NewReader(`{"error":"error"}`)),
+	}, nil
+}
+
+var neo4jMockHTTPClient = &http.Client{
+	Transport: &neo4jMockTransport{},
+}
+
+var _ = Describe("Neo4jAuraInstance controller", func() {
 	const (
 		timeout  = time.Second * 4
 		interval = time.Millisecond * 600
 	)
 
-	When("reconciling a suspended AWSRDSInstance", func() {
+	When("reconciling a suspended Neo4jAuraInstance", func() {
 		instanceName := fmt.Sprintf("instance-%s", rand.String(5))
 
 		It("should not update the status", func() {
-			By("creating a new AWSRDSInstance")
+			By("creating a new Neo4jAuraInstance")
 			ctx := context.Background()
 
-			gi := &v1beta1.AWSRDSInstance{
+			gi := &v1beta1.Neo4jAuraInstance{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      instanceName,
 					Namespace: "default",
 				},
-				Spec: v1beta1.AWSRDSInstanceSpec{
+				Spec: v1beta1.Neo4jAuraInstanceSpec{
 					Suspend: true,
 				},
 			}
@@ -40,7 +64,7 @@ var _ = Describe("AWSRDSInstance controller", func() {
 
 			By("waiting for the reconciliation")
 			instanceLookupKey := types.NamespacedName{Name: instanceName, Namespace: "default"}
-			reconciledInstance := &v1beta1.AWSRDSInstance{}
+			reconciledInstance := &v1beta1.Neo4jAuraInstance{}
 
 			Eventually(func() bool {
 				err := k8sClient.Get(ctx, instanceLookupKey, reconciledInstance)
@@ -58,16 +82,15 @@ var _ = Describe("AWSRDSInstance controller", func() {
 
 	When("it can't find the referenced secret with credentials", func() {
 		It("should update the status", func() {
-			By("creating a new AWSRDSInstance")
+			By("creating a new Neo4jAuraInstance")
 			ctx := context.Background()
 
-			gi := &v1beta1.AWSRDSInstance{
+			gi := &v1beta1.Neo4jAuraInstance{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      instanceName,
 					Namespace: "default",
 				},
-				Spec: v1beta1.AWSRDSInstanceSpec{
-					Region: "eu-central-1",
+				Spec: v1beta1.Neo4jAuraInstanceSpec{
 					Secret: v1beta1.LocalObjectReference{
 						Name: secretName,
 					},
@@ -77,9 +100,9 @@ var _ = Describe("AWSRDSInstance controller", func() {
 
 			By("waiting for the reconciliation")
 			instanceLookupKey := types.NamespacedName{Name: instanceName, Namespace: "default"}
-			reconciledInstance := &v1beta1.AWSRDSInstance{}
+			reconciledInstance := &v1beta1.Neo4jAuraInstance{}
 
-			expectedStatus := &v1beta1.AWSRDSInstanceStatus{
+			expectedStatus := &v1beta1.Neo4jAuraInstanceStatus{
 				ObservedGeneration: 1,
 				Conditions: []metav1.Condition{
 					{
@@ -102,7 +125,7 @@ var _ = Describe("AWSRDSInstance controller", func() {
 		})
 	})
 
-	When("it can't find the access key from the secret", func() {
+	When("it can't find the clientID from the secret", func() {
 		It("should update the status", func() {
 			By("creating a secret")
 			ctx := context.Background()
@@ -117,16 +140,16 @@ var _ = Describe("AWSRDSInstance controller", func() {
 
 			By("waiting for the reconciliation")
 			instanceLookupKey := types.NamespacedName{Name: instanceName, Namespace: "default"}
-			reconciledInstance := &v1beta1.AWSRDSInstance{}
+			reconciledInstance := &v1beta1.Neo4jAuraInstance{}
 
-			expectedStatus := &v1beta1.AWSRDSInstanceStatus{
+			expectedStatus := &v1beta1.Neo4jAuraInstanceStatus{
 				ObservedGeneration: 1,
 				Conditions: []metav1.Condition{
 					{
 						Type:    v1beta1.ConditionReady,
 						Status:  metav1.ConditionFalse,
 						Reason:  "ReconciliationFailed",
-						Message: "AWS_ACCESS_KEY_ID not found in secret",
+						Message: "clientID not found in secret",
 					},
 				},
 			}
@@ -142,7 +165,7 @@ var _ = Describe("AWSRDSInstance controller", func() {
 		})
 	})
 
-	When("it can't find the access secret from the secret", func() {
+	When("it can't find the clientSecret from the secret", func() {
 		It("should update the status", func() {
 			By("creating a secret")
 			ctx := context.Background()
@@ -150,21 +173,21 @@ var _ = Describe("AWSRDSInstance controller", func() {
 			var secret corev1.Secret
 			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: secretName, Namespace: "default"}, &secret)).Should(Succeed())
 
-			secret.StringData = map[string]string{"AWS_ACCESS_KEY_ID": "id"}
+			secret.StringData = map[string]string{"clientID": "id"}
 			Expect(k8sClient.Update(ctx, &secret)).Should(Succeed())
 
 			By("waiting for the reconciliation")
 			instanceLookupKey := types.NamespacedName{Name: instanceName, Namespace: "default"}
-			reconciledInstance := &v1beta1.AWSRDSInstance{}
+			reconciledInstance := &v1beta1.Neo4jAuraInstance{}
 
-			expectedStatus := &v1beta1.AWSRDSInstanceStatus{
+			expectedStatus := &v1beta1.Neo4jAuraInstanceStatus{
 				ObservedGeneration: 1,
 				Conditions: []metav1.Condition{
 					{
 						Type:    v1beta1.ConditionReady,
 						Status:  metav1.ConditionFalse,
 						Reason:  "ReconciliationFailed",
-						Message: "AWS_SECRET_ACCESS_KEY not found in secret",
+						Message: "clientSecret not found in secret",
 					},
 				},
 			}
@@ -180,7 +203,7 @@ var _ = Describe("AWSRDSInstance controller", func() {
 		})
 	})
 
-	When("no such rds instance found and no pod selector set", func() {
+	When("no such aura instance found and no pod selector set", func() {
 		It("should report Ready=false and ScaledToZero=false", func() {
 			By("creating a secret")
 			ctx := context.Background()
@@ -188,21 +211,21 @@ var _ = Describe("AWSRDSInstance controller", func() {
 			var secret corev1.Secret
 			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: secretName, Namespace: "default"}, &secret)).Should(Succeed())
 
-			secret.StringData = map[string]string{"AWS_SECRET_ACCESS_KEY": "id"}
+			secret.StringData = map[string]string{"clientSecret": "id"}
 			Expect(k8sClient.Update(ctx, &secret)).Should(Succeed())
 
 			By("waiting for the reconciliation")
 			instanceLookupKey := types.NamespacedName{Name: instanceName, Namespace: "default"}
-			reconciledInstance := &v1beta1.AWSRDSInstance{}
+			reconciledInstance := &v1beta1.Neo4jAuraInstance{}
 
-			expectedStatus := &v1beta1.AWSRDSInstanceStatus{
+			expectedStatus := &v1beta1.Neo4jAuraInstanceStatus{
 				ObservedGeneration: 1,
 				Conditions: []metav1.Condition{
 					{
 						Type:    v1beta1.ConditionReady,
 						Status:  metav1.ConditionFalse,
 						Reason:  "ReconciliationFailed",
-						Message: "no such rds instance found",
+						Message: "failed to get instance list, request failed with code 500 - {\"error\":\"error\"}",
 					},
 					{
 						Type:    v1beta1.ConditionScaledToZero,
@@ -224,7 +247,7 @@ var _ = Describe("AWSRDSInstance controller", func() {
 		})
 	})
 
-	When("no such rds instance found and no pod selector set", func() {
+	When("no such aura instance found and no pod selector set", func() {
 		It("should report Ready=false and ScaledToZero=false", func() {
 			By("creating a secret")
 			ctx := context.Background()
@@ -232,21 +255,21 @@ var _ = Describe("AWSRDSInstance controller", func() {
 			var secret corev1.Secret
 			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: secretName, Namespace: "default"}, &secret)).Should(Succeed())
 
-			secret.StringData = map[string]string{"AWS_SECRET_ACCESS_KEY": "id"}
+			secret.StringData = map[string]string{"clientSecret": "id"}
 			Expect(k8sClient.Update(ctx, &secret)).Should(Succeed())
 
 			By("waiting for the reconciliation")
 			instanceLookupKey := types.NamespacedName{Name: instanceName, Namespace: "default"}
-			reconciledInstance := &v1beta1.AWSRDSInstance{}
+			reconciledInstance := &v1beta1.Neo4jAuraInstance{}
 
-			expectedStatus := &v1beta1.AWSRDSInstanceStatus{
+			expectedStatus := &v1beta1.Neo4jAuraInstanceStatus{
 				ObservedGeneration: 1,
 				Conditions: []metav1.Condition{
 					{
 						Type:    v1beta1.ConditionReady,
 						Status:  metav1.ConditionFalse,
 						Reason:  "ReconciliationFailed",
-						Message: "no such rds instance found",
+						Message: "failed to get instance list, request failed with code 500 - {\"error\":\"error\"}",
 					},
 					{
 						Type:    v1beta1.ConditionScaledToZero,
@@ -270,12 +293,12 @@ var _ = Describe("AWSRDSInstance controller", func() {
 
 	matchLabel := fmt.Sprintf("app-%s", rand.String(5))
 
-	When("no such rds instance found and a selector which matches no pods", func() {
+	When("no such aura instance found and a selector which matches no pods", func() {
 		It("should report Ready=false and ScaledToZero=true", func() {
 			By("creating a secret")
 			ctx := context.Background()
 
-			var instance v1beta1.AWSRDSInstance
+			var instance v1beta1.Neo4jAuraInstance
 			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: instanceName, Namespace: "default"}, &instance)).Should(Succeed())
 
 			instance.Spec.ScaleToZero = []metav1.LabelSelector{
@@ -289,16 +312,16 @@ var _ = Describe("AWSRDSInstance controller", func() {
 
 			By("waiting for the reconciliation")
 			instanceLookupKey := types.NamespacedName{Name: instanceName, Namespace: "default"}
-			reconciledInstance := &v1beta1.AWSRDSInstance{}
+			reconciledInstance := &v1beta1.Neo4jAuraInstance{}
 
-			expectedStatus := &v1beta1.AWSRDSInstanceStatus{
+			expectedStatus := &v1beta1.Neo4jAuraInstanceStatus{
 				ObservedGeneration: 1,
 				Conditions: []metav1.Condition{
 					{
 						Type:    v1beta1.ConditionReady,
 						Status:  metav1.ConditionFalse,
 						Reason:  "ReconciliationFailed",
-						Message: "no such rds instance found",
+						Message: "failed to get instance list, request failed with code 500 - {\"error\":\"error\"}",
 					},
 					{
 						Type:    v1beta1.ConditionScaledToZero,
@@ -320,7 +343,7 @@ var _ = Describe("AWSRDSInstance controller", func() {
 		})
 	})
 
-	When("no such rds instance found and a pod is running which matches a scaleToZero selector", func() {
+	When("no such aura instance found and a pod is running which matches a scaleToZero selector", func() {
 		It("should report Ready=false and ScaledToZero=true", func() {
 			By("creating a secret")
 			ctx := context.Background()
@@ -344,16 +367,16 @@ var _ = Describe("AWSRDSInstance controller", func() {
 
 			By("waiting for the reconciliation")
 			instanceLookupKey := types.NamespacedName{Name: instanceName, Namespace: "default"}
-			reconciledInstance := &v1beta1.AWSRDSInstance{}
+			reconciledInstance := &v1beta1.Neo4jAuraInstance{}
 
-			expectedStatus := &v1beta1.AWSRDSInstanceStatus{
+			expectedStatus := &v1beta1.Neo4jAuraInstanceStatus{
 				ObservedGeneration: 1,
 				Conditions: []metav1.Condition{
 					{
 						Type:    v1beta1.ConditionReady,
 						Status:  metav1.ConditionFalse,
 						Reason:  "ReconciliationFailed",
-						Message: "no such rds instance found",
+						Message: "failed to get instance list, request failed with code 500 - {\"error\":\"error\"}",
 					},
 					{
 						Type:    v1beta1.ConditionScaledToZero,

@@ -3,4 +3,5 @@ kind: Kustomization
 resources:
 - bases/cloudautoscale.infra.doodle.com_awsrdsinstances.yaml
 - bases/cloudautoscale.infra.doodle.com_mongodbatlasclusters.yaml
+- bases/cloudautoscale.infra.doodle.com_neo4jaurainstances.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
