@@ -166,7 +166,6 @@ func (r *MongoDBAtlasClusterReconciler) Reconcile(ctx context.Context, req ctrl.
 		logger.Error(err, "reconcile error occurred")
 		cluster = infrav1beta1.MongoDBAtlasClusterReady(cluster, metav1.ConditionFalse, "ReconciliationFailed", err.Error())
 		r.Recorder.Event(&cluster, "Normal", "error", err.Error())
-		result.Requeue = true
 	}
 
 	// Update status after reconciliation.

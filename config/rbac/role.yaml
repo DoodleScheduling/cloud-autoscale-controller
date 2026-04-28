@@ -5,6 +5,15 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
+  - ""
+  resources:
+  - pods
+  - secrets
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
   - cloudautoscale.infra.doodle.com
   resources:
   - awsrdsinstances
@@ -36,12 +45,3 @@ rules:
   - get
   - patch
   - update
-- apiGroups:
-  - ""
-  resources:
-  - pods
-  - secrets
-  verbs:
-  - get
-  - list
-  - watch

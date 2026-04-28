@@ -16,6 +16,7 @@ rules:
   resources:
   - awsrdsinstances
   - mongodbatlasclusters
+  - neo4jaurainstances
   verbs:
   - create
   - delete
@@ -29,6 +30,7 @@ rules:
   resources:
   - awsrdsinstances/status
   - mongodbatlasclusters/status
+  - neo4jaurainstances/status
   verbs:
   - get
   - patch
