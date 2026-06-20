@@ -10,7 +10,7 @@ require (
 	github.com/go-logr/logr v1.4.3
 	github.com/mongodb-forks/digest v1.1.0
 	github.com/onsi/ginkgo/v2 v2.31.0
-	github.com/onsi/gomega v1.40.0
+	github.com/onsi/gomega v1.42.0
 	github.com/spf13/pflag v1.0.10
 	go.mongodb.org/atlas v0.38.0
 	golang.org/x/oauth2 v0.36.0
