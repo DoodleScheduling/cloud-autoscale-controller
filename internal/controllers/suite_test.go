@@ -90,7 +90,7 @@ var _ = BeforeSuite(func() {
 		HTTPClient: httpClient,
 		Client:     k8sManager.GetClient(),
 		Log:        ctrl.Log.WithName("controllers").WithName("MongoDBAtlasCluster"),
-		Recorder:   k8sManager.GetEventRecorderFor("MongoDBAtlasCluster"),
+		Recorder:   k8sManager.GetEventRecorder("MongoDBAtlasCluster"),
 	}).SetupWithManager(k8sManager, MongoDBAtlasClusterReconcilerOptions{})
 	Expect(err).ToNot(HaveOccurred())
 
@@ -98,7 +98,7 @@ var _ = BeforeSuite(func() {
 		HTTPClient: httpClient,
 		Log:        ctrl.Log.WithName("controllers").WithName("MongoDBAtlasCluster"),
 		Client:     k8sManager.GetClient(),
-		Recorder:   k8sManager.GetEventRecorderFor("AWSRDSInstance"),
+		Recorder:   k8sManager.GetEventRecorder("AWSRDSInstance"),
 	}).SetupWithManager(k8sManager, AWSRDSInstanceReconcilerOptions{})
 	Expect(err).ToNot(HaveOccurred())
 
@@ -106,7 +106,7 @@ var _ = BeforeSuite(func() {
 		HTTPClient: neo4jMockHTTPClient,
 		Log:        ctrl.Log.WithName("controllers").WithName("Neo4jAuraInstance"),
 		Client:     k8sManager.GetClient(),
-		Recorder:   k8sManager.GetEventRecorderFor("Neo4jAuraInstance"),
+		Recorder:   k8sManager.GetEventRecorder("Neo4jAuraInstance"),
 	}).SetupWithManager(k8sManager, Neo4jAuraInstanceReconcilerOptions{})
 	Expect(err).ToNot(HaveOccurred())
 

@@ -33,7 +33,7 @@ type AWSRDSInstanceList struct {
 }
 
 func init() {
-	SchemeBuilder.Register(&AWSRDSInstance{}, &AWSRDSInstanceList{})
+	objectTypes = append(objectTypes, &AWSRDSInstance{}, &AWSRDSInstanceList{})
 }
 
 type AWSRDSInstanceStatus struct {
