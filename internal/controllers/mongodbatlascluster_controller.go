@@ -33,7 +33,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/tools/events"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -46,13 +46,15 @@ import (
 //+kubebuilder:rbac:groups=cloudautoscale.infra.doodle.com,resources=mongodbatlasclusters/finalizers,verbs=update
 //+kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;watch
 //+kubebuilder:rbac:groups=core,resources=secrets,verbs=get;list;watch
+// +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
+// +kubebuilder:rbac:groups=events.k8s.io,resources=events,verbs=create;patch
 
 // MongoDBAtlasClusterReconciler reconciles a Namespace object
 type MongoDBAtlasClusterReconciler struct {
 	client.Client
 	HTTPClient *http.Client
 	Log        logr.Logger
-	Recorder   record.EventRecorder
+	Recorder   events.EventRecorder
 }
 
 type MongoDBAtlasClusterReconcilerOptions struct {
@@ -165,7 +167,7 @@ func (r *MongoDBAtlasClusterReconciler) Reconcile(ctx context.Context, req ctrl.
 	if err != nil {
 		logger.Error(err, "reconcile error occurred")
 		cluster = infrav1beta1.MongoDBAtlasClusterReady(cluster, metav1.ConditionFalse, "ReconciliationFailed", err.Error())
-		r.Recorder.Event(&cluster, "Normal", "error", err.Error())
+		r.Recorder.Eventf(&cluster, nil, corev1.EventTypeWarning, "Error", "Reconcile", "failed to reconcile: %s", err.Error())
 	}
 
 	// Update status after reconciliation.

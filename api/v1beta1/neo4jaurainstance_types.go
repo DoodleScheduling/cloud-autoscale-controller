@@ -32,7 +32,7 @@ type Neo4jAuraInstanceList struct {
 }
 
 func init() {
-	SchemeBuilder.Register(&Neo4jAuraInstance{}, &Neo4jAuraInstanceList{})
+	objectTypes = append(objectTypes, &Neo4jAuraInstance{}, &Neo4jAuraInstanceList{})
 }
 
 type Neo4jAuraInstanceStatus struct {

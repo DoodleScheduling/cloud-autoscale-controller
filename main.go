@@ -155,7 +155,7 @@ func main() {
 	mongodbAtlasClusterReconciler := &controllers.MongoDBAtlasClusterReconciler{
 		Client:   mgr.GetClient(),
 		Log:      ctrl.Log.WithName("controllers").WithName("MongoDBAtlasCluster"),
-		Recorder: mgr.GetEventRecorderFor("MongoDBAtlasCluster"),
+		Recorder: mgr.GetEventRecorder("MongoDBAtlasCluster"),
 	}
 
 	if err = mongodbAtlasClusterReconciler.SetupWithManager(mgr, controllers.MongoDBAtlasClusterReconcilerOptions{
@@ -169,7 +169,7 @@ func main() {
 		Client:     mgr.GetClient(),
 		Log:        ctrl.Log.WithName("controllers").WithName("AWSRDSInstance"),
 		HTTPClient: http.DefaultClient,
-		Recorder:   mgr.GetEventRecorderFor("AWSRDSInstance"),
+		Recorder:   mgr.GetEventRecorder("AWSRDSInstance"),
 	}
 
 	if err = awsRDSInstanceReconciler.SetupWithManager(mgr, controllers.AWSRDSInstanceReconcilerOptions{
@@ -183,7 +183,7 @@ func main() {
 		Client:     mgr.GetClient(),
 		Log:        ctrl.Log.WithName("controllers").WithName("Neo4jAuraInstance"),
 		HTTPClient: http.DefaultClient,
-		Recorder:   mgr.GetEventRecorderFor("Neo4jAuraInstance"),
+		Recorder:   mgr.GetEventRecorder("Neo4jAuraInstance"),
 	}
 
 	if err = neo4jAuraInstanceReconciler.SetupWithManager(mgr, controllers.Neo4jAuraInstanceReconcilerOptions{

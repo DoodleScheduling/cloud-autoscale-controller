@@ -33,7 +33,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/tools/events"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -52,13 +52,15 @@ const (
 //+kubebuilder:rbac:groups=cloudautoscale.infra.doodle.com,resources=awsrdsinstances/finalizers,verbs=update
 //+kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;watch
 //+kubebuilder:rbac:groups=core,resources=secrets,verbs=get;list;watch
+// +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
+// +kubebuilder:rbac:groups=events.k8s.io,resources=events,verbs=create;patch
 
 // AWSRDSInstanceReconciler reconciles a Namespace object
 type AWSRDSInstanceReconciler struct {
 	client.Client
 	HTTPClient *http.Client
 	Log        logr.Logger
-	Recorder   record.EventRecorder
+	Recorder   events.EventRecorder
 }
 
 type AWSRDSInstanceReconcilerOptions struct {
@@ -173,7 +175,7 @@ func (r *AWSRDSInstanceReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	if err != nil {
 		logger.Error(err, "reconcile error occurred")
 		instance = infrav1beta1.AWSRDSInstanceReady(instance, metav1.ConditionFalse, "ReconciliationFailed", err.Error())
-		r.Recorder.Event(&instance, "Normal", "error", err.Error())
+		r.Recorder.Eventf(&instance, nil, corev1.EventTypeWarning, "Error", "Reconcile", "failed to reconcile: %s", err.Error())
 	}
 
 	// Update status after reconciliation.

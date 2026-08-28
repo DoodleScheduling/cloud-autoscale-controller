@@ -33,7 +33,7 @@ type MongoDBAtlasClusterList struct {
 }
 
 func init() {
-	SchemeBuilder.Register(&MongoDBAtlasCluster{}, &MongoDBAtlasClusterList{})
+	objectTypes = append(objectTypes, &MongoDBAtlasCluster{}, &MongoDBAtlasClusterList{})
 }
 
 type MongoDBAtlasClusterStatus struct {
