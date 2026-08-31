@@ -3,8 +3,8 @@ module github.com/doodlescheduling/cloud-autoscale-controller
 go 1.26.0
 
 require (
-	github.com/aws/aws-sdk-go-v2 v1.44.0
-	github.com/aws/aws-sdk-go-v2/service/rds v1.125.0
+	github.com/aws/aws-sdk-go-v2 v1.45.1
+	github.com/aws/aws-sdk-go-v2/service/rds v1.126.1
 	github.com/doodlescheduling/neo4j-aura-controller v0.0.4
 	github.com/fluxcd/pkg/runtime v0.111.0
 	github.com/go-logr/logr v1.4.4
@@ -25,10 +25,10 @@ require (
 	github.com/MakeNowJust/heredoc v1.0.0 // indirect
 	github.com/Masterminds/semver/v3 v3.5.0 // indirect
 	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.40 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.40 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.5.1 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.8.1 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.19 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.13.40 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.14.1 // indirect
 	github.com/aws/smithy-go v1.28.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
