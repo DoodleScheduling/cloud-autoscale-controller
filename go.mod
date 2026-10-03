@@ -4,7 +4,7 @@ go 1.26.0
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.47.1
-	github.com/aws/aws-sdk-go-v2/service/rds v1.129.1
+	github.com/aws/aws-sdk-go-v2/service/rds v1.130.0
 	github.com/doodlescheduling/neo4j-aura-controller v0.1.0
 	github.com/fluxcd/pkg/runtime v0.114.0
 	github.com/go-logr/logr v1.4.4
