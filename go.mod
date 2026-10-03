@@ -6,7 +6,7 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.47.1
 	github.com/aws/aws-sdk-go-v2/service/rds v1.130.0
 	github.com/doodlescheduling/neo4j-aura-controller v0.1.0
-	github.com/fluxcd/pkg/runtime v0.114.0
+	github.com/fluxcd/pkg/runtime v0.115.0
 	github.com/go-logr/logr v1.4.4
 	github.com/mongodb-forks/digest v1.1.0
 	github.com/onsi/ginkgo/v2 v2.33.0
