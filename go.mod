@@ -11,7 +11,7 @@ require (
 	github.com/mongodb-forks/digest v1.2.0
 	github.com/onsi/ginkgo/v2 v2.34.0
 	github.com/onsi/gomega v1.44.0
-	github.com/spf13/pflag v1.0.10
+	github.com/spf13/pflag v1.1.0
 	go.mongodb.org/atlas v0.38.0
 	golang.org/x/oauth2 v0.37.0
 	k8s.io/api v0.37.2
