@@ -6,7 +6,7 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.48.0
 	github.com/aws/aws-sdk-go-v2/service/rds v1.133.0
 	github.com/doodlescheduling/neo4j-aura-controller v0.1.0
-	github.com/fluxcd/pkg/runtime v0.122.0
+	github.com/fluxcd/pkg/runtime v0.123.0
 	github.com/go-logr/logr v1.4.4
 	github.com/mongodb-forks/digest v1.2.0
 	github.com/onsi/ginkgo/v2 v2.34.0
@@ -39,7 +39,7 @@ require (
 	github.com/evanphx/json-patch/v5 v5.9.11 // indirect
 	github.com/exponent-io/jsonpath v0.0.0-20210407135951-1de76d718b3f // indirect
 	github.com/fluxcd/cli-utils v1.4.0 // indirect
-	github.com/fluxcd/pkg/apis/meta v1.38.0 // indirect
+	github.com/fluxcd/pkg/apis/meta v1.39.0 // indirect
 	github.com/fsnotify/fsnotify v1.10.1 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.3 // indirect
 	github.com/go-errors/errors v1.5.1 // indirect
